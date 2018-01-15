@@ -1,1 +1,1 @@
-# game-skeleton-no-p5
+# A space ship flies through space

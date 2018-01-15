@@ -20,7 +20,6 @@ class Ship {
         // with some upward velocity
         this.loc = new Vector2d(space.width/2, space.height-75);
         this.vel = new Vector2d(2,-2);
-        this.r = 20;    // radius
         this.space = space;
         this.img = new Image();
         this.img.src = "resources/images/spaceship.png";
@@ -35,11 +34,17 @@ class Ship {
             this.space.update(this.vel);
         }
 
-    // The ship image is rendered at 50%, centered on its location
     render(ctx) {
-        if(this.img.complete)
-            ctx.drawImage(this.img, this.loc.x-this.img.width/4, this.loc.y-this.img.height/4,
+        if(this.img.complete) {
+            // Rotate the ship according to its velocity
+            // adding 90 degrees to make it look right
+            ctx.translate(this.loc.x,this.loc.y);
+            ctx.rotate(this.vel.angle() + Math.PI/2);
+            // The ship image is rendered at 50%, centered on its location
+            ctx.drawImage(this.img, -this.img.width/4, -this.img.height/4,
                 this.img.width/2,this.img.height/2);
+            }
+
     }
 }
 

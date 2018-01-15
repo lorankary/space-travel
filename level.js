@@ -19,7 +19,8 @@ class Ship {
         // the ship is initially located 75 px above the bottom center of space
         // with some upward velocity
         this.loc = new Vector2d(space.width/2, space.height-75);
-        this.vel = new Vector2d(2,-2);
+        this.vel = new Vector2d(0,-2);
+        this.targetVel = this.vel.copy();   // for lerping
         this.space = space;
         this.img = new Image();
         this.img.src = "resources/images/spaceship.png";
@@ -30,6 +31,11 @@ class Ship {
             // The ship and the canvas move through space together
             // so that the ship maintains the same relative
             // position in the canvas
+            // Change the velocity of the ship gradually
+            // to smooth it out.
+            var lerp = this.targetVel.copy().sub(this.vel);
+            lerp.mul(0.25);
+            this.vel.add(lerp);
             this.loc.add(this.vel);
             this.space.update(this.vel);
         }
@@ -106,9 +112,9 @@ class Level {
                         acc.y = 0.75; break;
                 default: break;
             }
-            ship.vel.add(acc);  // accelerate the space ship or not
-            if(ship.vel.length() > 5.0){
-                ship.vel.normalize().mul(5.0);  // limit to 5.0
+            ship.targetVel.add(acc);  // accelerate the space ship or not
+            if(ship.targetVel.length() > 5.0){
+                ship.targetVel.normalize().mul(5.0);  // limit to 5.0
             }
 
 

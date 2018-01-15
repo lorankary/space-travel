@@ -83,10 +83,22 @@ class Level {
         function(evt) {
             var acc = new Vector2d(0,0);
             switch(evt.key){
-                case 'ArrowLeft': acc.x = -0.75; break;
-                case 'ArrowUp': acc.y = -0.75; break;
-                case 'ArrowRight': acc.x = 0.75; break;
-                case 'ArrowDown': acc.y = 0.75; break;
+                case 'ArrowLeft':
+                case 'a':
+                case 'A':
+                        acc.x = -0.75; break;
+                case 'ArrowUp':
+                case 's':
+                case 'S':
+                        acc.y = -0.75; break;
+                case 'ArrowRight':
+                case 'f':
+                case 'F':
+                        acc.x = 0.75; break;
+                case 'ArrowDown':
+                    case 'd':
+                    case 'D':
+                        acc.y = 0.75; break;
                 default: break;
             }
             ship.vel.add(acc);  // accelerate the space ship or not

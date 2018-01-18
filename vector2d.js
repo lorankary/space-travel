@@ -168,11 +168,9 @@ Vector2d.prototype.lengthSquared = function () {
 // 2-20-17 normalize the spelling of normalise to normalize
 Vector2d.prototype.normalize = function()
 {
-    var len = Math.sqrt(this.x*this.x + this.y*this.y);
-    if(len) {
-        this.x /= len;
-        this.y /= len;
-    }
+    var ang = this.angle();
+    this.x = Math.cos(ang);
+    this.y = Math.sin(ang);
     return(this);
 };
 
@@ -181,12 +179,13 @@ Vector2d.prototype.dotProd = function(v2)
 {
     return (this.x * v2.x) + (this.y * v2.y);
 };
-
 // Rotate vector by an angle in radians.
 Vector2d.prototype.rotate = function(ang)
 {
-    this.x = (this.x * Math.cos(ang)) - (this.y * Math.sin(ang));
-    this.y = (this.y * Math.cos(ang)) + (this.x * Math.sin(ang));
+    var vx = (this.x * Math.cos(ang)) - (this.y * Math.sin(ang));
+    var vy = (this.x * Math.sin(ang)) + (this.y * Math.cos(ang));
+    this.x = vx;
+    this.y = vy;
     return(this);
 };
 
@@ -204,13 +203,11 @@ Vector2d.prototype.toString = function()
     return 'x = ' + this.x + ', y = ' + this.y;
 };
 
-Vector2d.prototype.rotate = function(angle) {
-    this.x = Math.cos(angle) * this.x - Math.sin(angle) * this.y
-    this.y = Math.sin(angle) * this.x + Math.cos(angle) * this.y
-    return(this);
-
-};
-
+Vector2d.prototype.setMagnitude = function(mag) {
+    var ang = this.angle();
+    this.x = mag*Math.cos(ang);
+    this.y = mag*Math.sin(ang);
+}
     // 2-20-17 added copy()
 Vector2d.prototype.copy =  function() {
     return(new Vector2d(this.x, this.y));
@@ -230,3 +227,10 @@ Vector2d.prototype.angleBetween = function (vec2) {
 Vector2d.prototype.angle =  function () {
     return(Math.atan2(this.y, this.x));
 };
+
+Vector2d.prototype.setAngle = function(ang) {
+    var mag = this.length();
+    this.x = mag*Math.cos(ang);
+    this.y = mag*Math.sin(ang);
+    return this;
+}

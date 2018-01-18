@@ -18,8 +18,8 @@ class Ship {
     constructor(space){
         // the ship is initially located 75 px above the bottom center of space
         // with some upward velocity
-        this.loc = new Vector2d(space.width/2, space.height-75);
-        this.vel = new Vector2d(0,-2);
+        this.loc = new Vector2d(space.starFieldWidth/2, space.starFieldheight-75);
+        this.vel = new Vector2d(0,-2);  // initial gentle upward velocity
         this.targetVel = this.vel.copy();   // for lerping
         this.space = space;
         this.img = new Image();
@@ -40,15 +40,14 @@ class Ship {
             this.space.update(this.vel);
         }
 
-    render(ctx) {
+    render(ctx) {   // draw the ship
         if(this.img.complete) {
-            // Rotate the ship according to its velocity
-            // adding 90 degrees to make it look right
-            ctx.translate(this.loc.x,this.loc.y);
-            ctx.rotate(this.vel.angle() + Math.PI/2);
+            ctx.save();
             // The ship image is rendered at 50%, centered on its location
-            ctx.drawImage(this.img, -this.img.width/4, -this.img.height/4,
+            ctx.translate(-this.space.canvasLoc.x, -this.space.canvasLoc.y);
+            ctx.drawImage(this.img, this.loc.x-this.img.width/4, this.loc.y-this.img.height/4,
                 this.img.width/2,this.img.height/2);
+            ctx.restore();
             }
 
     }
@@ -65,12 +64,15 @@ class Level {
     init() {    // needs to be called each time a level is re-started
                 // different level numbers should have different behavior
         this.space = {
-            // space is 5 times the width and height of the canvas
-            width: 5*this.game.canvas.width,
-            height: 5*this.game.canvas.height,
+            // space is infinite but the star field is
+            // five times the width and height of the canvas
+            // The star field is located in the lower right
+            // quadrant of space.
+            starFieldWidth: 5*this.game.canvas.width,
+            starFieldheight: 5*this.game.canvas.height,
             stars: [],
             // The canvas, like the ship, has a location in space
-            // the canvas is initially located centered at the bottom of space
+            // the canvas is initially located centered at the bottom of the starfield
             canvasLoc: new Vector2d(2*this.game.canvas.width,4*this.game.canvas.height),
             // update --
             // the canvas moves the same as the ship moves
@@ -84,7 +86,6 @@ class Level {
                 for(var i = 0; i < this.stars.length; i++)
                     this.stars[i].render(ctx);
                 ctx.restore();
-
             }
         }
         this.createStars(this.space);
@@ -92,40 +93,49 @@ class Level {
         var ship = this.space.ship;
         window.addEventListener('keypress',
         function(evt) {
-            var acc = new Vector2d(0,0);
+            var velMag = ship.targetVel.length();
+            var acc = new Vector2d(0.5,0);  // vector of length .5
+            var ang = ship.vel.angle();
             switch(evt.key){
-                case 'ArrowLeft':
+                case 'ArrowLeft':   // turn counterclockwise
                 case 'a':
                 case 'A':
-                        acc.x = -0.75; break;
-                case 'ArrowUp':
+                        acc.setAngle(ang - Math.PI/2);
+                        acc.setMagnitude(0.1*velMag);   // turn less when going slower
+                        break;
+                case 'ArrowUp': // increase forward velocity
                 case 's':
                 case 'S':
-                        acc.y = -0.75; break;
-                case 'ArrowRight':
+                        acc.setAngle(ang); break;
+                case 'ArrowRight': // turn clockwise
                 case 'f':
                 case 'F':
-                        acc.x = 0.75; break;
-                case 'ArrowDown':
+                        acc.setAngle(ang + Math.PI/2);
+                        acc.setMagnitude(0.1*velMag);  // turn less when going slower
+                        break;
+                case 'ArrowDown':   // decrease forward velocity
                     case 'd':
                     case 'D':
-                        acc.y = 0.75; break;
-                default: break;
+                        acc.setAngle(ang + Math.PI);
+                        // do not allow velocity to fall to zero
+                        // because that will abruptly change the angle.
+                        // the magnitude of the acceleration is known to be 0.5
+                        if(velMag < 0.51)
+                            acc.setMagnitude(velMag - 0.01);
+                        break;
+                default: acc.x = acc.y = 0; break;
             }
             ship.targetVel.add(acc);  // accelerate the space ship or not
-            if(ship.targetVel.length() > 5.0){
+            if(ship.targetVel.length() > 5.0)
                 ship.targetVel.normalize().mul(5.0);  // limit to 5.0
-            }
-
-
         },
         false);
     }
 
-    // fill up space with stars 50 px apart
+    // fill up space with stars 150 px apart
     createStars(space){
-        for(var x = 100; x < space.width; x+= 100 )
-            for(var y = 100; y < space.height; y += 100)
+        for(var x = 100; x < space.starFieldWidth; x+= 150 )
+            for(var y = 100; y < space.starFieldheight; y += 150)
             space.stars.push(new Star(x, y));
     }
 
@@ -149,11 +159,39 @@ class Level {
       context.fillRect(0, 0, context.canvas.width, context.canvas.height);
       // move the origin from the top left of the canvas
       // to the top left of the space
-      context.translate(-this.space.canvasLoc.x, -this.space.canvasLoc.y);
+      // I also want to rotate space around the space ship.
+      // According to Foley & Van Dam figure 7.29 on pg 253,
+      // the matrix to rotate around an arbitrary point is
+      // |           cos theta                    sin theta            0  |
+      // |          -sin theta                    cos theta            0  |
+      // | x(1-cos theta) + y sin theta  y(1-cos theta) - x sin theta  1  |
+      // where x and y is the arbitrary point.
 
+      var t = this.space.ship.vel.angle() + Math.PI/2;  // theta
+      var cos_t = Math.cos(-t); // use -t because we want space
+      var sin_t = Math.sin(-t); // to rotate opposite to the ship
+      var x = this.space.ship.loc.x;    // point around which to rotate
+      var y = this.space.ship.loc.y;
+      // The api for transform() is
+      // context.transform(a,b,c,d,e,f) where
+      // |  a  b  |
+      // |  c  d  |
+      // |  e  f  |
+      // The transformation would be:
+      // x' = ax + cy + e
+      // y' = bx + dy + f
+
+      var e = x * (1-cos_t) + y * sin_t;
+      var f = y * (1-cos_t) - x * sin_t;
+
+      // First translate to get into space coordinates
+      context.translate(-this.space.canvasLoc.x, -this.space.canvasLoc.y);
+      // Then transform to rotate around the center of the space ship
+      context.transform(cos_t, sin_t, -sin_t, cos_t, e, f);
+      // Now the stars (or whatever else occupies space) can be rendered
       this.space.renderStars(context);
-      this.space.ship.render(context);
       context.restore();
+      this.space.ship.render(context);
     }
 
 }

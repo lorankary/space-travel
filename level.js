@@ -18,7 +18,7 @@ class Ship {
     constructor(space){
         // the ship is initially located 75 px above the bottom center of space
         // with some upward velocity
-        this.loc = new Vector2d(space.starFieldWidth/2, space.starFieldheight-75);
+        this.loc = new Vector2d(space.starFieldWidth/2, space.starFieldHeight-75);
         this.vel = new Vector2d(0,-2);  // initial gentle upward velocity
         this.targetVel = this.vel.copy();   // for lerping
         this.space = space;
@@ -41,14 +41,22 @@ class Ship {
         }
 
     render(ctx) {   // draw the ship
-        if(this.img.complete) {
-            ctx.save();
-            // The ship image is rendered at 50%, centered on its location
-            ctx.translate(-this.space.canvasLoc.x, -this.space.canvasLoc.y);
-            ctx.drawImage(this.img, this.loc.x-this.img.width/4, this.loc.y-this.img.height/4,
-                this.img.width/2,this.img.height/2);
-            ctx.restore();
-            }
+        ctx.save();
+        // The ship image is rendered at 50%, centered on its location
+        ctx.translate(-this.space.canvasLoc.x, -this.space.canvasLoc.y);
+        ctx.drawImage(this.img, this.loc.x-this.img.width/4, this.loc.y-this.img.height/4,
+            this.img.width/2,this.img.height/2);
+        ctx.restore();
+    }
+
+    renderSmallCanvas(ctx) {
+        ctx.save();
+        ctx.translate(this.loc.x,this.loc.y);
+        ctx.rotate(this.vel.angle() + (Math.PI/2));
+        // draw the ship image at 400%
+        ctx.drawImage(this.img, -this.img.width, -this.img.height,
+            this.img.width*2,this.img.height*2);
+        ctx.restore();
 
     }
 }
@@ -69,7 +77,7 @@ class Level {
             // The star field is located in the lower right
             // quadrant of space.
             starFieldWidth: 5*this.game.canvas.width,
-            starFieldheight: 5*this.game.canvas.height,
+            starFieldHeight: 5*this.game.canvas.height,
             stars: [],
             // The canvas, like the ship, has a location in space
             // the canvas is initially located centered at the bottom of the starfield
@@ -104,18 +112,18 @@ class Level {
                         acc.setMagnitude(0.1*velMag);   // turn less when going slower
                         break;
                 case 'ArrowUp': // increase forward velocity
-                case 's':
-                case 'S':
+                case 'w':
+                case 'W':
                         acc.setAngle(ang); break;
                 case 'ArrowRight': // turn clockwise
-                case 'f':
-                case 'F':
+                case 'd':
+                case 'D':
                         acc.setAngle(ang + Math.PI/2);
                         acc.setMagnitude(0.1*velMag);  // turn less when going slower
                         break;
                 case 'ArrowDown':   // decrease forward velocity
-                    case 'd':
-                    case 'D':
+                    case 's':
+                    case 'S':
                         acc.setAngle(ang + Math.PI);
                         // do not allow velocity to fall to zero
                         // because that will abruptly change the angle.
@@ -135,7 +143,7 @@ class Level {
     // fill up space with stars 150 px apart
     createStars(space){
         for(var x = 100; x < space.starFieldWidth; x+= 150 )
-            for(var y = 100; y < space.starFieldheight; y += 150)
+            for(var y = 100; y < space.starFieldHeight; y += 150)
             space.stars.push(new Star(x, y));
     }
 
@@ -191,7 +199,50 @@ class Level {
       // Now the stars (or whatever else occupies space) can be rendered
       this.space.renderStars(context);
       context.restore();
-      this.space.ship.render(context);
+      var ship = this.space.ship;
+      ship.render(context);
+
+      // The small canvas is scaled down to show the entire starfield,
+      // half the width and height of the canvas,
+      // initially centered in the small canvas.
+      var ctx2 = this.game.ctx2;
+      var scaleFactor = ctx2.canvas.width/(this.space.starFieldWidth*1.5);
+      ctx2.save();
+      ctx2.fillStyle = "black";
+      ctx2.fillRect(0, 0, ctx2.canvas.width, ctx2.canvas.height);
+      ctx2.scale(scaleFactor,scaleFactor);
+
+      // Center the starfield in the small canvas unless the Ship
+      // is approaching the edge of the canvas.
+      var translate_x = this.space.starFieldWidth/4;
+      var translate_y = this.space.starFieldHeight/4;
+
+      // If the space ship moves too close to the edges of the small canvas,
+      // adjust the translation to keep the ship in view.
+      var x_adjust = ship.loc.x - 1.15*this.space.starFieldWidth;
+      // If the ship is too far to the right of the starField
+      // reduce the x translation
+      if(x_adjust > 0)
+          translate_x -= x_adjust;  // shift the starfield left
+      // to far to the left of the starfield?
+      x_adjust = -.15*this.space.starFieldWidth - ship.loc.x;
+      if(x_adjust > 0)
+          translate_x += x_adjust;  // shift the starfield right
+      // too far to the top of the starfield?
+      var y_adjust = -.15*this.space.starFieldHeight - ship.loc.y;
+      if(y_adjust > 0)
+          translate_y += y_adjust;    // shift the starfield down
+      // too far to the bottom of the starfield?
+      y_adjust = ship.loc.y - 1.15*this.space.starFieldHeight;
+      if(y_adjust > 0)
+          translate_y -= y_adjust;   // shift the starfield up
+
+
+      ctx2.translate(translate_x,translate_y);
+      this.space.renderStars(ctx2);
+      this.space.ship.renderSmallCanvas(ctx2);
+      ctx2.restore();
+
     }
 
 }

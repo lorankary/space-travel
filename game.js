@@ -22,29 +22,34 @@ class Game {
   constructor() {   // from setup()
     this.isRunning = true;
     this.canvas =  document.getElementById('canvas');
-  	if (!this.canvas || !this.canvas.getContext) 
+  	if (!this.canvas || !this.canvas.getContext)
         throw "No valid canvas found!";
+    canvas.style.margin = "4px";
     this.context = this.canvas.getContext("2d");
     if(!this.context)
-        throw "No valid context found!";    
+        throw "No valid context found!";
+    var canvas2 = document.getElementById('canvas2');
+    this.ctx2 = canvas2.getContext("2d");
+    if (!canvas2 || !this.ctx2)
+        throw "No valid canvas2 found!";
+    canvas2.style.margin = "4px";
     this.levels = [];
     this.numLevels = 1;     // for now
     this.currentLevel = 1;
     for(let i = 0; i < this.numLevels; i++)
         this.levels.push(new Level(this, i+1));
-      
+
   }
 
-  
+
   run() {       // called from draw()
     if(this.isRunning) {
         this.render();
         this.levels[this.currentLevel-1].run();  // run the current level
     }
   }
-  
+
   render() {    // draw whatever
   }
-  
-}
 
+}

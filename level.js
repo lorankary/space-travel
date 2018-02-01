@@ -101,29 +101,38 @@ class Level {
         var ship = this.space.ship;
         window.addEventListener('keypress',
         function(evt) {
+            // console.log(evt.key,evt.charCode, evt.keyCode);
             var velMag = ship.targetVel.length();
             var acc = new Vector2d(0.5,0);  // vector of length .5
             var ang = ship.vel.angle();
-            switch(evt.key){
-                case 'ArrowLeft':   // turn counterclockwise
-                case 'a':
-                case 'A':
+            switch(evt.charCode){
+                // case 'ArrowLeft':   // turn counterclockwise
+                // case 'a':
+                // case 'A':
+                case 97:
+                case 65:
                         acc.setAngle(ang - Math.PI/2);
                         acc.setMagnitude(0.1*velMag);   // turn less when going slower
                         break;
-                case 'ArrowUp': // increase forward velocity
-                case 'w':
-                case 'W':
+                // case 'ArrowUp': // increase forward velocity
+                // case 'w':
+                // case 'W':
+                case 87:
+                case 119:
                         acc.setAngle(ang); break;
-                case 'ArrowRight': // turn clockwise
-                case 'd':
-                case 'D':
+                // case 'ArrowRight': // turn clockwise
+                // case 'd':
+                // case 'D':
+                case 68:
+                case 100:
                         acc.setAngle(ang + Math.PI/2);
                         acc.setMagnitude(0.1*velMag);  // turn less when going slower
                         break;
-                case 'ArrowDown':   // decrease forward velocity
-                    case 's':
-                    case 'S':
+                    // case 'ArrowDown':   // decrease forward velocity
+                    // case 's':
+                    // case 'S':
+                    case 83:
+                    case 115:
                         acc.setAngle(ang + Math.PI);
                         // do not allow velocity to fall to zero
                         // because that will abruptly change the angle.
@@ -131,6 +140,32 @@ class Level {
                         if(velMag < 0.51)
                             acc.setMagnitude(velMag - 0.01);
                         break;
+                case 0:
+                    // on the Mac at least, the arrow keys have 0 for the charCode
+                    // but something significant for the keyCode
+                    switch(evt.keyCode) {
+                        case 37: // left arrow
+                            acc.setAngle(ang - Math.PI/2);
+                            acc.setMagnitude(0.1*velMag);   // turn less when going slower
+                            break;
+                        case 38:    // up arrow
+                            acc.setAngle(ang); break;
+                        case 39:    // right arrow
+                            acc.setAngle(ang + Math.PI/2);
+                            acc.setMagnitude(0.1*velMag);  // turn less when going slower
+                            break;
+                        case 40:    // down arrow
+                            acc.setAngle(ang + Math.PI);
+                            // do not allow velocity to fall to zero
+                            // because that will abruptly change the angle.
+                            // the magnitude of the acceleration is known to be 0.5
+                            if(velMag < 0.51)
+                                acc.setMagnitude(velMag - 0.01);
+                            break;
+                        default: acc.x = acc.y = 0; break;
+
+                    }
+                    break;
                 default: acc.x = acc.y = 0; break;
             }
             ship.targetVel.add(acc);  // accelerate the space ship or not
@@ -159,7 +194,6 @@ class Level {
 
     render() {
         // draw whatever
-        // here is some place holder
       var context = this.game.context;
       context.save();
       // draw a black background
